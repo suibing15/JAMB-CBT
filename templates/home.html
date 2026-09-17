@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<style>
+.dynamic-bg {
+    animation: colorFade 8s infinite alternate;
+}
+@keyframes colorFade {
+    0%   { background: #e8f1ff; }
+    35%  { background: #eafff4; }
+    70%  { background: #fff3e8; }
+    100% { background: #ffe8fa; }
+}
+.contact-box {
+    padding: 15px;
+    background: #ffffff;
+    border-radius: 10px;
+    margin-top: 15px;
+    border: 1px solid #cddcff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.contact-box a {
+    display: block;
+    margin-bottom: 7px;
+    font-weight: 600;
+    color: #0052cc;
+}
+.contact-box a:hover { color: #ff6600; }
+</style>
+
+
+<div class="page-container dynamic-bg" style="transition: background 1s;">
+    <div class="menu-grid">
+
+     
+
+        <a href="{% url 'register' %}" class="menu-box">
+            <div class="menu-icon">📝</div>
+            <div class="menu-text">REGISTER FOR JAMB TRAINING</div>
+        </a>
+
+        <a href="{% url 'exam_portal:exam_login' %}" class="menu-box">
+            <div class="menu-icon">🎓</div>
+            <div class="menu-text">START JAMB TRAINING</div>
+        </a>
+
+        <a href="{% url 'exam_portal:find_record' %}" class="menu-box">
+            <div class="menu-icon">🗂️</div>
+            <div class="menu-text">FIND YOUR RECORD</div>
+        </a>
+
+        <a href="#contact" class="menu-box" onclick="toggleContact()">
+            <div class="menu-icon">☎️</div>
+            <div class="menu-text">CONTACT ADMIN</div>
+        </a>
+
+    </div>
+
+    <!-- Contact Admin Box -->
+    <div id="contactDiv" class="contact-box" style="display:none;">
+        <h4 style="margin-bottom:10px; color:#003e99;">📞 Contact Channels</h4>
+        <a href="mailto:suibingitservices@gmail.com">📧 Email: suibingitservices@gmail.com</a>
+        <a href="https://wa.me/2347080195042" target="_blank">💬 WhatsApp: +2347080195042</a>
+        <a href="https://www.facebook.com/share/17ZXnmbWqx/" target="_blank">📘 Facebook</a>
+        <p style="margin-top:7px; font-size:12px; color:#777;">Live Chat available when server is online</p>
+    </div>
+</div>
+
+<script>
+function toggleContact(){
+    let div = document.getElementById("contactDiv");
+    div.style.display = div.style.display === "none" ? "block" : "none";
+}
+</script>
+
+
+
+{% endblock %}

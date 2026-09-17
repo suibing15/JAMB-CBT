@@ -1,0 +1,311 @@
+<!-- ================= CHAT WIDGET - WhatsApp Style ================= -->
+<style>
+#chatLaunchBtn {
+    position: fixed;
+    bottom: 25px;
+    right: 25px;
+    background: #0a84ff;
+    color: white;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    font-size: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 999999;
+    box-shadow: 0 5px 18px rgba(0,0,0,0.3);
+}
+#chatLaunchBtn:hover { transform: scale(1.1); }
+
+#chatBox {
+    position: fixed;
+    bottom: 95px;
+    right: 25px;
+    width: 340px;
+    height: 440px;
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #d6e2ff;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 999999;
+    box-shadow: 0 7px 26px rgba(0,0,0,0.35);
+}
+
+.chatHeader {
+    background: #0a84ff;
+    color: white;
+    padding: 10px;
+    font-weight: bold;
+    text-align: center;
+}
+
+.chatBody {
+    flex: 1;
+    overflow-y: auto;
+    background: #eef5ff;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+}
+
+.msg {
+    max-width: 80%;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    border-radius: 10px;
+    word-wrap: break-word;
+    font-size: 13px;
+}
+
+.msg.user {
+    background: #ffffff;
+    align-self: flex-start;
+}
+
+.msg.admin {
+    background: #d9edff;
+    border-left: 3px solid #007bff;
+    align-self: flex-end;
+}
+
+.msgTime {
+    font-size: 10px;
+    color: #777;
+    margin-top: 3px;
+}
+
+#typingIndicator {
+    font-size: 11px;
+    margin-bottom: 5px;
+    color: #0077ff;
+    display: none;
+}
+
+.chatFooter {
+    display: flex;
+    border-top: 1px solid #d6e2ff;
+}
+.chatFooter input {
+    flex: 1;
+    padding: 8px;
+    border: none;
+    outline: none;
+}
+.chatFooter button {
+    padding: 8px 14px;
+    background: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+/* visitor info modal */
+#chatInfoModal {
+    position: fixed;
+    bottom: 120px;
+    right: 50px;
+    width: 300px;
+    padding: 15px;
+    background: white;
+    border-radius: 10px;
+    border: 1px solid #ccd8f5;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.25);
+    z-index: 9999999;
+    display: none;
+}
+#chatInfoModal input, #chatInfoModal select {
+    width: 100%;
+    padding: 7px;
+    margin-bottom: 8px;
+}
+/* ================= MOBILE RESPONSIVENESS ================= */
+
+@media (max-width: 768px) {
+
+    #chatBox {
+        width: 100%;
+        height: 100%;
+        bottom: 0;
+        right: 0;
+        border-radius: 0;
+    }
+
+    #chatLaunchBtn {
+        bottom: 15px;
+        right: 15px;
+        width: 55px;
+        height: 55px;
+        font-size: 24px;
+    }
+
+    #chatInfoModal {
+        width: 90%;
+        right: 5%;
+        bottom: 120px;
+    }
+
+    .chatHeader {
+        font-size: 16px;
+        padding: 12px;
+    }
+
+    .chatFooter input {
+        font-size: 16px; /* prevents mobile zoom */
+    }
+}
+</style>
+
+<audio id="chatSound">
+    <source src="/static/sound/notify.mp3" type="audio/mpeg">
+</audio>
+
+<div id="chatLaunchBtn">💬</div>
+
+<!-- Visitor info before chatting -->
+<div id="chatInfoModal">
+    <h4 style="margin-bottom:8px;">Start Chat</h4>
+    <input id="visitorName" placeholder="Your Name">
+    <input id="visitorPhone" placeholder="Phone Number">
+    <select id="visitorCategory">
+        <option value="support">Support</option>
+        <option value="inquiry">Inquiry</option>
+        <option value="complaint">Complaint</option>
+    </select>
+    <button onclick="startChat()" style="width:100%; background:#007bff; color:white;">Start</button>
+</div>
+
+<div id="chatBox">
+    <div class="chatHeader">Live Support</div>
+    <div id="chatMsgs" class="chatBody">
+        <div id="typingIndicator">Admin is typing...</div>
+    </div>
+    <div class="chatFooter">
+        <input id="chatInput" placeholder="Type message..." />
+        <button id="sendBtn">Send</button>
+    </div>
+</div>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    let chatContact = null;
+    let lastMsgId = 0;
+
+    const launchBtn = document.getElementById("chatLaunchBtn");
+    const sendBtn = document.getElementById("sendBtn");
+    const chatBox = document.getElementById("chatBox");
+    const chatInput = document.getElementById("chatInput");
+
+    /* ======================
+       CSRF TOKEN (ANDROID SAFE)
+    ====================== */
+    function getCSRFToken() {
+        const match = document.cookie.match(/csrftoken=([^;]+)/);
+        return match ? match[1] : "";
+    }
+
+    /* ======================
+       OPEN CHAT
+    ====================== */
+    launchBtn.addEventListener("click", function () {
+        if (!chatContact) {
+            document.getElementById("chatInfoModal").style.display = "block";
+            return;
+        }
+        chatBox.style.display = chatBox.style.display === "flex" ? "none" : "flex";
+        loadChats();
+    });
+
+    /* ======================
+       START CHAT
+    ====================== */
+    window.startChat = function () {
+        const phone = document.getElementById("visitorPhone").value.trim();
+        if (!phone) {
+            alert("Enter phone number");
+            return;
+        }
+        chatContact = phone;
+        document.getElementById("chatInfoModal").style.display = "none";
+        chatBox.style.display = "flex";
+        loadChats();
+    };
+
+    /* ======================
+       SEND MESSAGE (FIXED)
+    ====================== */
+    sendBtn.addEventListener("click", function () {
+        if (!chatInput.value.trim()) return;
+
+        fetch("{% url 'exam_portal:send_contact_message' %}", {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": getCSRFToken(),
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            body: new URLSearchParams({
+                name: document.getElementById("visitorName").value,
+                contact: chatContact,
+                category: document.getElementById("visitorCategory").value,
+                text: chatInput.value
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (!data.ok) {
+                console.error("Send failed:", data);
+                return;
+            }
+            chatInput.value = "";
+            setTimeout(loadChats, 300);
+        })
+        .catch(err => console.error("Network error:", err));
+    });
+
+    /* ======================
+       LOAD MESSAGES
+       NOTE: the server now scopes this to the visitor's own
+       session-bound chat thread automatically — the `contact`
+       param is no longer used to select which thread to read
+       (that was a security hole; see fetch_messages() server-side).
+       Sending it is harmless/ignored, kept only so this still works
+       unmodified if a cached older copy of this file is served.
+    ====================== */
+    function loadChats() {
+        fetch("{% url 'exam_portal:fetch_messages' %}?since_id=" + lastMsgId)
+        .then(r => r.json())
+        .then(data => {
+            if (!data.messages) return;
+
+            const wrap = document.getElementById("chatMsgs");
+
+            data.messages.forEach(m => {
+                lastMsgId = m.id;
+                const div = document.createElement("div");
+                div.className = "msg " + (m.is_admin ? "admin" : "user");
+                div.innerHTML = `
+                    ${m.message}
+                    <div class="msgTime">${m.created}</div>
+                `;
+                wrap.appendChild(div);
+            });
+
+            wrap.scrollTop = wrap.scrollHeight;
+        });
+    }
+
+    /* ======================
+       AUTO REFRESH
+    ====================== */
+    setInterval(() => {
+        if (chatContact && chatBox.style.display === "flex") {
+            loadChats();
+        }
+    }, 2000);
+
+});
+</script>
+

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-container">
+  <h2 style="text-align:center; color:#0058ff; margin-bottom:20px;">Exam Years</h2>
+
+  <a href="{% url 'management:exam_year_add' %}" class="btn-submit" style="width:auto; margin-bottom:15px;">
+      ➕ Add Exam Year
+  </a>
+
+  <div class="form-box">
+    {% for y in years %}
+      <div style="margin-bottom:12px; padding:10px; border-bottom:1px solid #d8e3ff;">
+        <strong>{{ y.year }}</strong>
+        <a href="{% url 'management:subject_list' y.id %}" style="color:#0058ff; margin-left:10px;">
+          • Manage Subjects
+        </a>
+      </div>
+    {% empty %}
+      <p>No exam years added yet.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

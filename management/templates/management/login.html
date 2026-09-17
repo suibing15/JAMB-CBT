@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-container" style="max-width:520px; margin:40px auto;">
+  <div class="form-box">
+    <h2 style="color:#00733E; text-align:center">Management Login</h2>
+    <form method="post">{% csrf_token %}
+      <label>Username</label>
+      <input name="username" class="input" />
+      <label>Password</label>
+      <input name="password" type="password" class="input" />
+      <button type="submit" class="btn-submit">Login</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

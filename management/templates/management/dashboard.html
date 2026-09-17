@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="page-container">
+
+    <h2 class="form-title">MANAGEMENT DASHBOARD</h2>
+
+    <div class="menu-grid" style="margin-bottom:25px;">
+
+        <!-- Manage Years -->
+        <a href="{% url 'management:exam_year_list' %}" class="menu-box">
+            <div class="menu-icon">📚</div>
+            <div class="menu-text">Manage Exam Years</div>
+        </a>
+
+        <!-- Manage Subjects & Questions -->
+        <a href="{% url 'management:exam_year_list' %}" class="menu-box">
+            <div class="menu-icon">📝</div>
+            <div class="menu-text">Manage Subjects & Questions</div>
+        </a>
+
+        <!-- Bulk PDF Download (Admin only — matches the view's
+             @role_required(['Admin']); hidden for DataEntry/Viewer
+             so the link never appears to "do nothing". -->
+        {% if is_admin %}
+        <a href="{% url 'management:download_all_pdfs' %}" class="menu-box">
+            <div class="menu-icon">📥</div>
+            <div class="menu-text">Bulk Download Registration Forms</div>
+        </a>
+        {% endif %}
+
+        <!-- Full Django Admin (obscured path — see DJANGO_ADMIN_URL) -->
+        {% if is_admin %}
+        <a href="/{{ admin_url }}" class="menu-box">
+            <div class="menu-icon">⚙️</div>
+            <div class="menu-text">Full Admin Panel</div>
+        </a>
+        {% endif %}
+
+        <!-- Logout -->
+        <a href="{% url 'management:logout' %}" class="menu-box">
+            <div class="menu-icon">🔒</div>
+            <div class="menu-text">Logout</div>
+        </a>
+
+    </div>
+
+    <h3 style="text-align:center; margin-top:10px; color:#0058ff;">
+        Registered Candidates ({{ total_candidates }})
+    </h3>
+
+    <table style="width:100%; margin-top:15px; border-collapse:collapse; font-size:14px;">
+        <tr style="background:#0058ff; color:white;">
+            <th style="padding:8px;">Passport</th>
+            <th>Name</th>
+            <th>Phone</th>
+            <th>Subjects</th>
+            <th>Date</th>
+            <th>Form</th>
+        </tr>
+
+        {% for c in candidates %}
+        <tr style="border-bottom:1px solid #dfe8ff;">
+            <td style="text-align:center;">
+                <img src="{{ c.passport.url }}" width="50" height="50" style="border-radius:5px;">
+            </td>
+            <td>{{ c.full_name }}</td>
+            <td>{{ c.phone }}</td>
+            <td>{{ c.subject1 }}, {{ c.subject2 }}, {{ c.subject3 }}, {{ c.subject4 }}</td>
+            <td>{{ c.date_registered|date:"d M, Y" }}</td>
+            <td>
+                <a href="{% url 'download_pdf' c.id %}">📄 Download</a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="6" style="text-align:center; padding:12px; color:#888;">No registered candidates yet.</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+</div>
+
+{% endblock %}

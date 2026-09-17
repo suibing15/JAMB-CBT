@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-container" style="max-width:600px; margin:auto;">
+  <h2 style="color:#00733E">Add Exam Year</h2>
+  <form method="post">{% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn-submit">Create Year</button>
+  </form>
+</div>
+{% endblock %}

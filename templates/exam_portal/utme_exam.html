@@ -1,0 +1,422 @@
+{% extends "base.html" %}
+{% load static %}
+{% load dict_extras %}
+{% block content %}
+
+<style>
+.cbt-container {
+    display: grid;
+    grid-template-columns: 20% 60% 20%;
+    height: calc(100vh - 80px);
+    background: linear-gradient(180deg,#f7fbff,#eef6ff);
+    gap:18px;
+    padding:18px 0;
+}
+
+/* Subject tab bar (native JAMB style — switch anytime) */
+.subject-tabs {
+    grid-column: 1 / -1;
+    display:flex; gap:8px; flex-wrap:wrap;
+    background:white; padding:10px; border-radius:10px; border:1px solid #e6eefc;
+    margin-bottom: -8px;
+}
+.subject-tab {
+    padding:9px 16px; border-radius:8px; cursor:pointer; font-weight:700;
+    background:#f0f5ff; color:#0b3a8c; border:1px solid transparent; position:relative;
+}
+.subject-tab.active { background:#0058ff; color:#fff; }
+.subject-tab .badge {
+    font-size:11px; margin-left:6px; padding:1px 6px; border-radius:10px;
+    background:rgba(0,0,0,0.12);
+}
+
+.question-nav {
+    background: white;
+    padding: 16px;
+    overflow-y: auto;
+    border-radius:10px;
+    border:1px solid #e6eefc;
+}
+.question-nav h3 { margin-bottom:12px; font-size:16px; color:#03336a; }
+.q-grid { display:flex; flex-wrap:wrap; gap:8px; }
+.q-btn {
+    width:40px; height:40px;
+    display:inline-flex; align-items:center; justify-content:center;
+    border-radius:8px; background:#f0f5ff; border:1px solid transparent;
+    cursor:pointer; font-weight:700; color:#0b3a8c;
+    transition:all .14s;
+}
+.q-btn:hover { transform:translateY(-2px); box-shadow:0 6px 18px rgba(3,51,102,0.06); }
+.q-btn.active { background:#0058ff; color:#fff; }
+.q-btn.answered { background:#00c851; color:#fff; }
+.q-btn.flagged { outline:3px solid #ff9800; }
+
+.question-area {
+    background: white;
+    padding: 22px;
+    overflow-y: auto;
+    border-radius:10px;
+    border:1px solid #e6eefc;
+}
+.question-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+.question-text { font-size:18px; line-height:1.6; margin-bottom:14px; color:#222; }
+.option-box { display:block; margin-bottom:10px; padding:12px; background:#f6f9ff; border-radius:8px; cursor:pointer; border:1px solid transparent; transition:.15s; }
+.option-box:hover { background:#eef4ff; border-color:#d4e2ff; }
+.option-box input { margin-right:10px; transform:scale(1.02); }
+
+.controls { margin-top:14px; display:flex; gap:8px; justify-content:flex-end; align-items:center; flex-wrap:wrap; }
+.btn { padding:10px 16px; border-radius:8px; border:none; cursor:pointer; font-size:15px; }
+.btn-prev { background:#e6eefc; color:#06376c; }
+.btn-next { background:#0058ff; color:#fff; }
+.btn-flag { background:#fff3e0; color:#a15c00; }
+.btn-submit { background:#d9534f; color:#fff; }
+.btn-calc { background:#00aaff; color:white; margin-right:auto; }
+
+.info-box {
+    background: white;
+    padding: 16px;
+    border-radius:10px;
+    border:1px solid #e6eefc;
+    display:flex; flex-direction:column; gap:10px; align-items:center;
+}
+.candidate-photo { width:110px; height:110px; object-fit:cover; border-radius:8px; border:1px solid #dfeaff; }
+.info-box h4 { margin:6px 0 0 0; color:#03336a; }
+.timer {
+    font-size:26px; color:#dc3545; font-weight:800;
+    background:#fff7f7; padding:10px 14px; border-radius:8px; border:1px solid #ffdfdf;
+}
+.timer.low { animation: pulse 1s infinite; }
+@keyframes pulse { 0%{opacity:1;} 50%{opacity:.4;} 100%{opacity:1;} }
+
+.progress-summary { width:100%; font-size:12px; color:#444; }
+.progress-summary div { display:flex; justify-content:space-between; padding:2px 0; }
+
+@media(max-width:980px){
+    .cbt-container { grid-template-columns: 1fr; height:auto; padding:10px 0; }
+    .question-nav { order:2; display:flex; overflow-x:auto; gap:6px; padding:12px; }
+    .question-area { order:1; }
+    .info-box { order:3; flex-direction:row; gap:12px; justify-content:space-between; padding:14px; flex-wrap:wrap; }
+}
+
+#calcModal {
+    display:none; position:fixed; right:18px; bottom:18px; z-index:9999; width:300px;
+    background:white; border-radius:10px; box-shadow:0 10px 30px rgba(0,0,0,0.15);
+    border:1px solid #e6eefc; cursor: move; user-select: none;
+}
+#calcModal header {
+    display:flex; justify-content:space-between; align-items:center; padding:8px 12px;
+    background:#00aaff; color:white; border-top-left-radius:10px; border-top-right-radius:10px; font-weight:bold;
+}
+#calcModal #closeCalc { border:none; background:transparent; font-size:18px; cursor:pointer; color:white; }
+#calcModal #calcDisplay { width:100%; padding:10px; font-size:20px; margin:8px 0; border-radius:6px; border:1px solid #eef4ff; text-align:right; }
+.calc-keys { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-bottom:8px; }
+.calc-keys button { padding:14px; font-size:16px; border:none; border-radius:6px; cursor:pointer; background:#f0f5ff; transition:.15s; }
+.calc-keys button:hover { background:#eef4ff; }
+.calc-keys button.operator { background:#00aaff; color:white; }
+</style>
+
+<div class="cbt-container">
+
+    <!-- SUBJECT TABS: switch freely, exactly like real JAMB -->
+    <div class="subject-tabs">
+        {% for s in subjects %}
+            <div class="subject-tab {% if s.active %}active{% endif %}"
+                 onclick="switchSubject('{{ s.name }}')">
+                {{ s.name }}
+                <span class="badge">{{ s.answered }}/{{ s.total }}</span>
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- LEFT: Question Nav -->
+    <div class="question-nav">
+        <h3>{{ active_subject.subject }}</h3>
+        <div class="q-grid" id="qGrid">
+            {% for q in questions %}
+                {% with idx=forloop.counter0 %}
+                <button class="q-btn
+                    {% if idx == index %}active{% endif %}
+                    {% if q.id|stringformat:'s' in session.answers %}answered{% endif %}
+                    {% if q.id|stringformat:'s' in session.flagged %}flagged{% endif %}"
+                        onclick="goToQuestion({{ idx }})">
+                    {{ forloop.counter }}
+                </button>
+                {% endwith %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- MAIN: Question Area -->
+    <div class="question-area">
+        <div class="question-header">
+            <div>
+                <strong style="font-size:16px; color:#003b8a;">{{ active_subject.subject }}</strong>
+                <div style="font-size:13px; color:#555;">Question <strong>{{ index|add:1 }}</strong> of <strong>{{ total_questions }}</strong></div>
+            </div>
+            <div>
+                <small style="color:#666;">Sitting: <strong>#{{ session.id }}</strong></small>
+            </div>
+        </div>
+
+        {% if current_question %}
+        <p class="question-text" id="questionText">{{ current_question.question_text }}</p>
+
+        {% if current_question.image %}
+            <div style="margin-bottom:12px;">
+                <img src="{{ current_question.image.url }}" style="max-width:420px; width:100%; border-radius:8px; border:1px solid #e9f0ff;">
+            </div>
+        {% endif %}
+
+        <form method="POST" id="answerForm" action="{% url 'exam_portal:utme_exam' %}?subject={{ active_subject.subject }}&q={{ index }}">
+            {% csrf_token %}
+            <input type="hidden" name="subject" value="{{ active_subject.subject }}">
+            <input type="hidden" name="question_id" id="question_id" value="{{ current_question.id }}">
+            <input type="hidden" name="action" id="formAction" value="answer">
+
+            {% with saved=session.answers|get_item:current_question.id %}
+            <label class="option-box {% if saved == 'A' %}selected{% endif %}">
+                <input type="radio" name="answer" value="A" {% if saved == 'A' %}checked{% endif %}> {{ current_question.option_a }}
+            </label>
+            <label class="option-box {% if saved == 'B' %}selected{% endif %}">
+                <input type="radio" name="answer" value="B" {% if saved == 'B' %}checked{% endif %}> {{ current_question.option_b }}
+            </label>
+            <label class="option-box {% if saved == 'C' %}selected{% endif %}">
+                <input type="radio" name="answer" value="C" {% if saved == 'C' %}checked{% endif %}> {{ current_question.option_c }}
+            </label>
+            <label class="option-box {% if saved == 'D' %}selected{% endif %}">
+                <input type="radio" name="answer" value="D" {% if saved == 'D' %}checked{% endif %}> {{ current_question.option_d }}
+            </label>
+            {% endwith %}
+
+            <div class="controls">
+                <button type="button" class="btn btn-calc" id="openCalc">Calculator</button>
+                <button type="button" class="btn btn-flag" id="flagBtn">
+                    {% if current_question.id|stringformat:'s' in session.flagged %}★ Unflag{% else %}☆ Flag for review{% endif %}
+                </button>
+                <button type="button" class="btn btn-prev" id="prevBtn">← Previous</button>
+                <button type="button" class="btn btn-next" id="nextBtn">Next ▶</button>
+                <button type="button" class="btn btn-submit" id="finishBtn">Submit Exam</button>
+            </div>
+        </form>
+        {% else %}
+            <p>No questions available for this subject.</p>
+        {% endif %}
+    </div>
+
+    <!-- RIGHT: Info + Timer -->
+    <div class="info-box">
+        {% if candidate.passport %}
+            <img src="{{ candidate.passport.url }}" class="candidate-photo" alt="Candidate">
+        {% else %}
+            <div style="width:110px;height:110px;border-radius:8px;background:#f6f9ff;"></div>
+        {% endif %}
+        <h4>{{ candidate.full_name }}</h4>
+
+        <div style="width:100%; text-align:center; margin-top:4px;">
+            <div>Total Time Left (all subjects)</div>
+            <div class="timer" id="timerDisplay">--:--:--</div>
+        </div>
+
+        <div class="progress-summary">
+            {% for s in subjects %}
+            <div><span>{{ s.name }}</span><span>{{ s.answered }}/{{ s.total }}</span></div>
+            {% endfor %}
+        </div>
+    </div>
+
+</div>
+
+<!-- Calculator Modal -->
+<div id="calcModal">
+    <header>Calculator <button id="closeCalc">✕</button></header>
+    <input type="text" id="calcDisplay" readonly>
+    <div class="calc-keys">
+        <button class="operator" data-value="AC">AC</button>
+        <button class="operator" data-value="C">C</button>
+        <button class="operator" data-value="√">√</button>
+        <button class="operator" data-value="/">/</button>
+        <button data-value="7">7</button>
+        <button data-value="8">8</button>
+        <button data-value="9">9</button>
+        <button class="operator" data-value="*">*</button>
+        <button data-value="4">4</button>
+        <button data-value="5">5</button>
+        <button data-value="6">6</button>
+        <button class="operator" data-value="-">-</button>
+        <button data-value="1">1</button>
+        <button data-value="2">2</button>
+        <button data-value="3">3</button>
+        <button class="operator" data-value="+">+</button>
+        <button data-value="0">0</button>
+        <button data-value=".">.</button>
+        <button class="operator" data-value="x²">x²</button>
+        <button class="operator" data-value="=">=</button>
+    </div>
+</div>
+
+<script>
+const CSRF = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+
+function switchSubject(name){
+    window.location.href = "{% url 'exam_portal:utme_exam' %}?subject=" + encodeURIComponent(name);
+}
+function goToQuestion(i){
+    const url = new URL(window.location.href);
+    url.searchParams.set('q', i);
+    window.location.href = url.toString();
+}
+
+document.getElementById("prevBtn")?.addEventListener("click", () => {
+    let idx = {{ index }};
+    if (idx > 0) goToQuestion(idx - 1);
+});
+document.getElementById("nextBtn")?.addEventListener("click", () => {
+    let idx = {{ index }};
+    let total = {{ total_questions }};
+    // save current answer first, then move on
+    saveCurrentAnswer(() => {
+        if (idx + 1 < total) goToQuestion(idx + 1);
+    });
+});
+
+function saveCurrentAnswer(callback){
+    const form = document.getElementById("answerForm");
+    if (!form) { if (callback) callback(); return; }
+    const selected = form.querySelector('input[name="answer"]:checked');
+    if (!selected) { if (callback) callback(); return; }
+
+    fetch(form.action, {
+        method: "POST",
+        headers: {
+            "X-Requested-With": "XMLHttpRequest",
+            "X-CSRFToken": CSRF,
+        },
+        body: new URLSearchParams({
+            action: "answer",
+            question_id: document.getElementById("question_id").value,
+            answer: selected.value,
+            subject: "{{ active_subject.subject }}",
+        }),
+    }).finally(() => { if (callback) callback(); });
+}
+
+document.getElementById("flagBtn")?.addEventListener("click", () => {
+    const btn = document.getElementById("flagBtn");
+    fetch(window.location.pathname + window.location.search, {
+        method: "POST",
+        headers: {
+            "X-Requested-With": "XMLHttpRequest",
+            "X-CSRFToken": CSRF,
+        },
+        body: new URLSearchParams({
+            action: "flag",
+            question_id: document.getElementById("question_id").value,
+        }),
+    }).then(() => {
+        btn.textContent = btn.textContent.includes("Unflag") ? "☆ Flag for review" : "★ Unflag";
+    });
+});
+
+document.getElementById("finishBtn")?.addEventListener("click", () => {
+    if (!confirm("Submit the ENTIRE UTME sitting now? You will not be able to change any answers across ANY subject after this.")) return;
+    saveCurrentAnswer(() => {
+        const form = document.createElement("form");
+        form.method = "POST";
+        form.action = "{% url 'exam_portal:utme_exam' %}";
+        form.innerHTML = `
+            <input type="hidden" name="csrfmiddlewaretoken" value="${CSRF}">
+            <input type="hidden" name="action" value="submit_all">
+        `;
+        document.body.appendChild(form);
+        form.submit();
+    });
+});
+
+document.querySelectorAll('label.option-box input').forEach(input => {
+    input.addEventListener('change', e => {
+        document.querySelectorAll('label.option-box').forEach(l => l.classList.remove('selected'));
+        e.target.parentElement.classList.add('selected');
+        saveCurrentAnswer();
+    });
+});
+
+// ================= SHARED TIMER (server-verified) =================
+let remainingSeconds = parseInt({{ remaining|default:0 }});
+if (isNaN(remainingSeconds) || remainingSeconds <= 0) remainingSeconds = 0;
+const timerEl = document.getElementById("timerDisplay");
+
+function renderTimer() {
+    let h = Math.floor(remainingSeconds / 3600);
+    let m = Math.floor((remainingSeconds % 3600) / 60);
+    let s = remainingSeconds % 60;
+    timerEl.textContent = String(h).padStart(2,'0') + ":" + String(m).padStart(2,'0') + ":" + String(s).padStart(2,'0');
+    timerEl.classList.toggle("low", remainingSeconds <= 300);
+}
+renderTimer();
+
+setInterval(() => {
+    if (remainingSeconds > 0) { remainingSeconds--; renderTimer(); }
+}, 1000);
+
+// Poll the server every 20s: this is the SOURCE OF TRUTH for time —
+// a candidate editing their browser clock cannot extend the exam.
+function heartbeat(){
+    fetch("{% url 'exam_portal:utme_heartbeat' %}", {
+        method: "POST",
+        headers: { "X-CSRFToken": CSRF },
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (!data.ok) return;
+        remainingSeconds = data.remaining;
+        renderTimer();
+        if (data.completed) {
+            window.location.href = "{% url 'exam_portal:view_result' %}";
+        }
+    })
+    .catch(() => {});
+}
+setInterval(heartbeat, 20000);
+heartbeat();
+
+// ================= Calculator =================
+const calcModal = document.getElementById("calcModal");
+const calcDisplay = document.getElementById("calcDisplay");
+document.getElementById("openCalc")?.addEventListener("click", () => calcModal.style.display="block");
+document.getElementById("closeCalc")?.addEventListener("click", () => calcModal.style.display="none");
+document.querySelectorAll('.calc-keys button').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const val = btn.dataset.value;
+        if(val === "AC") { calcDisplay.value = ""; }
+        else if(val === "C") { calcDisplay.value = calcDisplay.value.slice(0,-1); }
+        else if(val === "√") { try { calcDisplay.value = Math.sqrt(Number(calcDisplay.value || 0)); } catch { calcDisplay.value = "ERR"; } }
+        else if(val === "x²") { try { calcDisplay.value = Math.pow(Number(calcDisplay.value || 0),2); } catch { calcDisplay.value = "ERR"; } }
+        else if(val === "=") {
+            try {
+                // Safe-ish arithmetic evaluator (digits, + - * / . only)
+                if (/^[0-9+\-*/.\s]+$/.test(calcDisplay.value)) {
+                    calcDisplay.value = Function('"use strict";return (' + calcDisplay.value + ')')();
+                } else {
+                    calcDisplay.value = "ERR";
+                }
+            } catch { calcDisplay.value = "ERR"; }
+        }
+        else { calcDisplay.value += val; }
+    });
+});
+let isDragging = false, offsetX=0, offsetY=0;
+calcModal.querySelector("header").addEventListener("mousedown", e=>{
+    isDragging=true;
+    offsetX = e.clientX - calcModal.offsetLeft;
+    offsetY = e.clientY - calcModal.offsetTop;
+});
+document.addEventListener("mousemove", e=>{
+    if(isDragging){
+        calcModal.style.left = (e.clientX - offsetX) + "px";
+        calcModal.style.top = (e.clientY - offsetY) + "px";
+    }
+});
+document.addEventListener("mouseup", () => { isDragging=false; });
+</script>
+
+{% endblock %}

@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+
+<style>
+    .exam-login-container{
+        max-width:420px;
+        margin:60px auto;
+        background:white;
+        padding:28px 35px;
+        border-radius:10px;
+        box-shadow:0 6px 25px rgba(0,0,0,0.12);
+        text-align:center;
+        animation: fadeIn .7s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        from {opacity:0; transform: translateY(25px);}
+        to {opacity:1; transform: translateY(0);}
+    }
+
+    .exam-login-container img{
+        width:85px;
+        margin-bottom:12px;
+    }
+
+    .exam-login-container h2{
+        font-size:22px;
+        color:#0058ff;
+        margin-bottom:6px;
+        font-weight:700;
+    }
+
+    .exam-login-container p{
+        font-size:14px;
+        color:#555;
+        margin-bottom:23px;
+    }
+
+    .exam-input{
+        width:100%;
+        padding:12px;
+        border:1.6px solid #cdd6ff;
+        border-radius:7px;
+        margin-bottom:15px;
+        font-size:15px;
+        outline:none;
+        transition:.25s;
+    }
+
+    .exam-input:focus{
+        border-color:#0058ff;
+        box-shadow:0 0 0 3px rgba(0,88,255,0.15);
+    }
+
+    .btn-exam-login{
+        width:100%;
+        background:#0058ff;
+        color:white;
+        padding:12px;
+        font-size:16px;
+        border:none;
+        border-radius:7px;
+        cursor:pointer;
+        transition:0.25s;
+    }
+
+    .btn-exam-login:hover{
+        background:#013ec8;
+    }
+
+    .support-text{
+        margin-top:12px;
+        font-size:13px;
+        color:#777;
+    }
+</style>
+
+
+<div class="exam-login-container">
+    
+    <img src="{% static 'img/logo.png' %}" alt="Logo">
+
+    <h2>CBT Candidate Login</h2>
+    <p>Enter your registered <strong>Phone Number</strong> and <strong>Exam PIN</strong> to begin.</p>
+
+    {% if messages %}
+        {% for message in messages %}
+        <p style="color:red; font-weight:600;">{{ message }}</p>
+        {% endfor %}
+    {% endif %}
+
+    <form method="POST">
+        {% csrf_token %}
+        <input type="text" name="phone" class="exam-input" placeholder="Phone Number" required>
+        <input type="text" name="pin" class="exam-input" placeholder="Exam PIN" required>
+        <button type="submit" class="btn-exam-login">Start Exam</button>
+    </form>
+
+    <p class="support-text">Forgot PIN? Contact the training center administration.</p>
+
+</div>
+
+{% endblock %}

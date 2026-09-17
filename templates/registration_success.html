@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="page-container form-box" style="text-align:center;">
+
+    <h2 style="color:#0058ff;">✅ Registration Successful</h2>
+    <p><b>{{ candidate.full_name }}</b> has been successfully registered.</p>
+
+    <a href="{% url 'download_pdf' candidate.id %}" class="btn-submit" style="display:inline-block; width:auto; padding:12px 30px; font-size:16px;">
+        📄 Download Registration Form
+    </a>
+
+    <br><br>
+    <a href="/" style="text-decoration:none; color:#0058ff; font-size:14px;">← Return to Home</a>
+
+</div>
+
+{% endblock %}

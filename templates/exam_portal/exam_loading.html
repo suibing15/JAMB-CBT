@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div style="text-align:center; padding-top:80px;">
+    <h2 style="color:#0058ff;">Preparing Your Exam...</h2>
+    <p>Subject: <strong>{{ exam_subject.name|default:exam_subject.subject }}</strong></p>
+
+    <p style="margin-top:20px; font-size:15px; color:#555;">
+        Please wait...
+    </p>
+</div>
+
+{% endblock %}

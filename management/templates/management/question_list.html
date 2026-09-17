@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-container">
+  <h2 style="text-align:center; color:#0058ff; margin-bottom:20px;">
+      Questions for {{ subject.subject }}
+  </h2>
+
+  <a href="/admin/exams/question/add/" class="btn-submit" style="width:auto; margin-bottom:15px;">
+      ➕ Add Question (via Admin Panel)
+  </a>
+
+  <div class="form-box">
+    {% for q in questions %}
+      <div style="margin-bottom:12px; padding:10px; border-bottom:1px solid #d8e3ff;">
+        <strong>{{ q.id }}.</strong> {{ q.question_text|truncatechars:150 }}
+        <span style="color:#00733E;">(Mark: {{ q.mark }})</span>
+      </div>
+    {% empty %}
+      <p>No questions added yet.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

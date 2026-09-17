@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-container" style="max-width:900px; margin:auto; padding:40px; background:white; border-radius:10px; box-shadow:0 4px 15px rgba(0,0,0,0.08);">
+
+    <h2 style="text-align:center; color:#0058ff;">CBT RESULT SUMMARY</h2>
+    <hr style="margin:20px 0;">
+
+    <p><strong>Name:</strong> {{ candidate.full_name }}</p>
+    <p><strong>Phone:</strong> {{ candidate.phone }}</p>
+
+    <h3 style="margin-top:20px;">
+        Total Score:
+        <span style="color:#00b64f;">{{ result.total_score }}</span> / 400
+    </h3>
+
+    <table style="width:100%; border-collapse:collapse; margin-top:12px;">
+        <thead>
+            <tr style="background:#f0f5ff;">
+                <th style="text-align:left; padding:8px; border:1px solid #e2e8f0;">Subject</th>
+                <th style="text-align:right; padding:8px; border:1px solid #e2e8f0;">Score</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for subject, score in result.subject_scores.items %}
+            <tr>
+                <td style="padding:8px; border:1px solid #e2e8f0;">{{ subject }}</td>
+                <td style="text-align:right; padding:8px; border:1px solid #e2e8f0;">{{ score }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- ===========================
+         PDF DOWNLOAD BUTTON (Added)
+         =========================== -->
+    <div style="margin-top:15px; margin-bottom:20px;">
+        <a href="{% url 'exam_portal:generate_result_pdf' %}?candidate_id={{ candidate.id }}"
+           style="background:#00b64f; color:white; padding:12px 20px; border-radius:6px; text-decoration:none; font-weight:600;">
+           📄 Download Result Slip (PDF)
+        </a>
+    </div>
+
+    <hr>
+    <h3>Subjects and Answers Review</h3>
+
+    {% for subject, answers in grouped_answers.items %}
+        <div style="margin-top:30px;">
+            <h4 style="color:#0058ff;">{{ subject }}</h4>
+            {% for ans in answers %}
+                <div style="padding:10px 12px; margin-bottom:10px; border-radius:8px; background:#f7f9ff;">
+                    <p style="margin-bottom:8px;"><strong>Q:</strong> {{ ans.question.question_text }}</p>
+
+                    <p>
+                        <strong>Your Answer:</strong>
+                        {{ ans.chosen_option }} –
+                        {% if ans.chosen_option == "A" %}{{ ans.question.option_a }}
+                        {% elif ans.chosen_option == "B" %}{{ ans.question.option_b }}
+                        {% elif ans.chosen_option == "C" %}{{ ans.question.option_c }}
+                        {% elif ans.chosen_option == "D" %}{{ ans.question.option_d }}
+                        {% endif %}
+                    </p>
+
+                    <p>
+                        <strong>Correct Answer:</strong>
+                        {{ ans.question.correct_answer }} –
+                        {% if ans.question.correct_answer == "A" %}{{ ans.question.option_a }}
+                        {% elif ans.question.correct_answer == "B" %}{{ ans.question.option_b }}
+                        {% elif ans.question.correct_answer == "C" %}{{ ans.question.option_c }}
+                        {% elif ans.question.correct_answer == "D" %}{{ ans.question.option_d }}
+                        {% endif %}
+
+                        {% if ans.correct %}
+                            <span style="color:green;">✅</span>
+                        {% else %}
+                            <span style="color:red;">❌</span>
+                        {% endif %}
+                    </p>
+                </div>
+            {% endfor %}
+        </div>
+    {% endfor %}
+
+    <div style="text-align:center; margin-top:30px;">
+        <a href="{% url 'exam_portal:exam_login' %}"
+           style="background:#0058ff; color:white; padding:12px 20px; border-radius:6px; text-decoration:none; font-weight:600;">
+           🔐 Return to Login Page
+        </a>
+    </div>
+
+</div>
+{% endblock %}

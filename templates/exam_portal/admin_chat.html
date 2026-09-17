@@ -1,0 +1,218 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+
+<h1>Live Chat — Admin Panel</h1>
+
+<style>
+.chat-container {
+    display: flex;
+    gap: 20px;
+}
+
+.user-list {
+    width: 30%;
+    border: 1px solid #ddd;
+    background: #fafafa;
+    height: 500px;
+    overflow-y: auto;
+}
+
+.user-item {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+    cursor: pointer;
+}
+.user-item:hover {
+    background: #e7f0ff;
+}
+
+.chat-window {
+    width: 70%;
+    border: 1px solid #ddd;
+    background: white;
+    height: 500px;
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-messages {
+    flex: 1;
+    padding: 10px;
+    overflow-y: auto;
+    background: #eef5ff;
+}
+
+.msg {
+    padding: 7px 10px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    max-width: 70%;
+}
+.msg.user { background: #fff; }
+.msg.admin { background: #d9edff; border-left: 3px solid #007bff; }
+
+.chat-input {
+    padding: 10px;
+    display: flex;
+    border-top: 1px solid #ccc;
+}
+.chat-input input {
+    flex: 1;
+    padding: 8px;
+}
+.chat-input button {
+    padding: 8px 15px;
+    margin-left: 10px;
+}
+</style>
+
+<div class="chat-container">
+
+    <!-- LEFT SIDE — USER LIST -->
+    <div class="user-list" id="userList"></div>
+
+    <!-- RIGHT SIDE — CHAT PANEL -->
+    <div class="chat-window">
+        <div id="chatMessages" class="chat-messages"></div>
+
+        <div class="chat-input">
+            <input id="adminReply" placeholder="Type reply...">
+            <button onclick="sendAdminReply()">Send</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+let activeContact = null;
+let lastId = 0;
+
+/* LOAD UNIQUE VISITORS */
+function loadUserList() {
+    fetch("/exam_portal/contact/fetch/")
+    .then(r => r.json())
+    .then(d => {
+        let users = {};
+        d.messages.forEach(m => {
+            if (m.contact) users[m.contact] = m.name || "Visitor";
+        });
+
+        let list = document.getElementById("userList");
+        list.innerHTML = "";
+
+        Object.keys(users).forEach(contact => {
+            list.innerHTML += `
+                <div class="user-item" onclick="openChat('${contact}')">
+                    <b>${users[contact]}</b><br>
+                    <small>${contact}</small>
+                </div>
+            `;
+        });
+    });
+}
+
+/* LOAD CHAT FOR SELECTED USER */
+function openChat(contact) {
+    activeContact = contact;
+    lastId = 0;
+    loadChatMessages();
+}
+
+function loadChatMessages() {
+    if (!activeContact) return;
+
+    fetch(`/exam_portal/contact/fetch/?contact=${activeContact}&since_id=${lastId}`)
+    .then(r => r.json())
+    .then(d => {
+        let box = document.getElementById("chatMessages");
+
+        d.messages.forEach(m => {
+            lastId = m.id;
+            let div = document.createElement("div");
+            div.className = "msg " + (m.is_admin ? "admin" : "user");
+            div.innerHTML = `${m.message}<br><small>${m.created}</small>`;
+            box.appendChild(div);
+        });
+
+        box.scrollTop = box.scrollHeight;
+    });
+}
+
+/* ADMIN REPLY */
+function sendAdminReply() {
+    let msg = document.getElementById("adminReply").value.trim();
+
+    if (!msg || !activeContact) {
+        alert("Select user + write message");
+        return;
+    }
+
+    fetch("/exam_portal/contact/admin-send/", {
+        method:"POST",
+        headers:{ "X-CSRFToken": "{{ csrf_token }}" },
+        body: new URLSearchParams({ contact: activeContact, text: msg })
+    })
+    .then(r => r.json())
+    .then(d => {
+        if (d.ok) {
+            document.getElementById("adminReply").value = "";
+            loadChatMessages();
+        }
+    });
+}
+
+/* AUTO REFRESH */
+setInterval(() => {
+    loadUserList();
+    loadChatMessages();
+}, 4000);
+
+// Load users initially
+loadUserList();
+</script>
+
+let lastAdminMsgId = 0;
+
+function refreshAdminChat() {
+    fetch("{% url 'exam_portal:fetch_messages' %}")
+        .then(res => res.json())
+        .then(data => {
+            let tbody = document.getElementById("adminChatBody");
+            tbody.innerHTML = "";
+
+            data.messages.forEach(m => {
+                lastAdminMsgId = m.id;
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${m.created}</td>
+                        <td>${m.is_admin ? "Admin" : m.name || "Visitor"}</td>
+                        <td>${m.contact}</td>
+                        <td>${m.message}</td>
+                        <td>${m.is_admin}</td>
+                    </tr>
+                `;
+            });
+        })
+        .catch(err => console.log("Admin chat refresh error:", err));
+}
+
+// AUTO-REFRESH ADMIN CHAT EVERY 2 SECONDS
+setInterval(refreshAdminChat, 2000);
+{% endblock %}
+<script>
+let typingTimer;
+const input = document.querySelector("textarea");
+
+if (input) {
+    input.addEventListener("input", () => {
+        clearTimeout(typingTimer);
+        fetch("/exams/chat/admin-typing/", {
+            method: "POST",
+            headers: {"X-CSRFToken": "{{ csrf_token }}"},
+            body: new URLSearchParams({contact: "{{ messages.0.visitor_contact }}"})
+        });
+        typingTimer = setTimeout(() => {}, 1500);
+    });
+}
+</script>

@@ -1,0 +1,7 @@
+{% extends "admin/change_form.html" %}
+{% block field_sets %}
+{% if reply_to %}
+<input type="hidden" name="reply_to" value="{{ reply_to }}">
+{% endif %}
+{{ block.super }}
+{% endblock %}

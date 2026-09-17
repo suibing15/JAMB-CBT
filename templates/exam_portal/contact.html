@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% block content %}
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+.contact-container{
+  max-width:980px; margin:30px auto; padding:20px;
+}
+.cards { display:grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap:14px; }
+.card {
+  background:white; padding:18px; border-radius:10px; box-shadow:0 6px 20px rgba(3,62,255,0.05);
+  border-left:6px solid #00b64f;
+}
+.card h3{ margin:0 0 6px 0; color:#0058ff; font-size:16px; }
+.card p{ margin:0; color:#444; font-size:14px; }
+
+.contact-grid { display:flex; gap:20px; margin-top:20px; flex-wrap:wrap; }
+.left { flex:1 1 420px; }
+.right { width:360px; min-width:260px; }
+
+.chat-widget {
+  position:sticky; top:18px; background:#fff; border-radius:10px; box-shadow:0 8px 30px rgba(2,6,23,0.06); padding:12px;
+}
+.chat-history{ max-height:360px; overflow:auto; padding:8px; background:#f7fbff; border-radius:8px; }
+.msg { margin:8px 0; padding:8px 10px; border-radius:8px; max-width:80%; }
+.msg.visitor{ background:#e8f7ee; margin-left:0; }
+.msg.admin{ background:#eef3ff; margin-left:auto; text-align:right; }
+.success-bar{ background:#dff0d8; color:#2d6a2d; padding:10px; border-radius:6px; margin-bottom:12px; display:none; }
+
+@media (max-width:700px){
+  .contact-grid{ flex-direction:column; }
+  .right{ width:100%; }
+}
+.form-row input, .form-row textarea{
+  width:100%; padding:10px; border-radius:6px; border:1px solid #e2e8ff; margin-bottom:8px;
+}
+.btn { background:#0058ff; color:#fff; padding:10px 12px; border-radius:6px; display:inline-block; text-decoration:none; border:none; cursor:pointer; }
+.whatsapp-link{ background:#25D366; color:white; padding:8px 10px; border-radius:6px; display:inline-block; text-decoration:none; }
+</style>
+
+<div class="contact-container">
+
+  <h2 style="color:#0058ff; text-align:center;">Contact Admin</h2>
+  <p style="text-align:center; color:#444;">Use any of the channels below or start a live chat (server must be running).</p>
+
+  <div class="cards">
+    <div class="card">
+      <h3>Email</h3>
+      <p>{{ contact.email }}</p>
+      <p style="margin-top:8px;"><a href="mailto:{{ contact.email }}" class="btn">Send Email</a></p>
+    </div>
+
+    <div class="card">
+      <h3>WhatsApp</h3>
+      <p>{{ contact.whatsapp }}</p>
+      <p style="margin-top:8px;">
+        <a href="{{ contact.whatsapp_link }}" target="_blank" class="whatsapp-link">Open WhatsApp</a>
+      </p>
+    </div>
+
+    <div class="card">
+      <h3>Facebook</h3>
+      <p>Official Page</p>
+      <p style="margin-top:8px;"><a href="{{ contact.facebook }}" target="_blank" class="btn">Open Facebook</a></p>
+    </div>
+  </div>
+
+  <div class="contact-grid" style="margin-top:18px;">
+    <div class="left">
+      <div style="background:white; padding:14px; border-radius:10px;">
+        <h3>Send a message</h3>
+        <div class="success-bar" id="successBar">Message sent successfully. Admin will reply shortly.</div>
+        <div class="form-row">
+          <input id="vname" placeholder="Your name (optional)">
+          <input id="vcontact" placeholder="Phone or Email (optional)">
+          <textarea id="vtext" rows="5" placeholder="Write your message..." ></textarea>
+          <button id="sendBtn" class="btn">Send Message</button>
+        </div>
+        <small style="color:#666;">We will keep your contact private. For quick support use WhatsApp.</small>
+      </div>
+    </div>
+
+    <div class="right">
+      <div class="chat-widget">
+        <h4 style="margin:0 0 8px 0;">Live Chat</h4>
+        <div class="chat-history" id="chatHistory"></div>
+
+        <div style="margin-top:8px;">
+          <input id="chatName" placeholder="Name (optional)" style="width:100%; padding:8px; border-radius:6px; border:1px solid #e2e8ff; margin-bottom:6px;">
+          <input id="chatContact" placeholder="Phone or Email (optional)" style="width:100%; padding:8px; border-radius:6px; border:1px solid #e2e8ff; margin-bottom:6px;">
+          <textarea id="chatText" rows="3" placeholder="Type a message..." style="width:100%; padding:8px; border-radius:6px;"></textarea>
+          <div style="display:flex; gap:8px; margin-top:6px;">
+            <button id="chatSend" class="btn" style="flex:1;">Send</button>
+            <a href="{{ contact.whatsapp_link }}" target="_blank" class="whatsapp-link" style="align-self:center;">WhatsApp</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  const fetchUrl = "{% url 'exam_portal:fetch_messages' %}";
+  const sendUrl = "{% url 'exam_portal:send_contact_message' %}";
+
+  // display messages
+  function renderMessage(m){
+    const div = document.createElement('div');
+    div.className = 'msg ' + (m.is_admin ? 'admin' : 'visitor');
+    div.innerHTML = `<small style="font-size:11px;color:#666;">${m.name || m.contact || (m.is_admin ? 'Admin' : 'Visitor')} • ${m.created_at}</small>
+                     <div style="margin-top:6px;">${m.text}</div>`;
+    return div;
+  }
+
+  async function fetchLoop(since_id){
+    try{
+      const params = new URLSearchParams();
+      if(since_id) params.set('since_id', since_id);
+      const res = await fetch(fetchUrl + '?' + params.toString());
+      const data = await res.json();
+      if(data.ok){
+        const history = document.getElementById('chatHistory');
+        for(let m of data.messages){
+          history.appendChild(renderMessage(m));
+          since_id = m.id;
+        }
+        history.scrollTop = history.scrollHeight;
+      }
+    }catch(e){
+      console.warn('chat fetch error', e);
+    }
+    setTimeout(()=> fetchLoop(since_id), 2000);
+  }
+  fetchLoop(null);
+
+  // send message from right widget
+  document.getElementById('chatSend').addEventListener('click', async ()=>{
+    const name = document.getElementById('chatName').value;
+    const contact = document.getElementById('chatContact').value;
+    const text = document.getElementById('chatText').value;
+    if(!text.trim()) return alert('Enter message');
+    const form = new FormData();
+    form.append('name', name);
+    form.append('contact', contact);
+    form.append('text', text);
+    const res = await fetch(sendUrl, { method:'POST', body: form });
+    const data = await res.json();
+    if(data.ok){
+      document.getElementById('chatText').value = '';
+      // immediate append
+      const history = document.getElementById('chatHistory');
+      history.appendChild(renderMessage({ id:data.id, is_admin:false, name:name, contact:contact, text:text, created_at: data.created_at }));
+      history.scrollTop = history.scrollHeight;
+    } else {
+      alert('Send failed: ' + (data.error || 'unknown'));
+    }
+  });
+
+  // send from the left form
+  document.getElementById('sendBtn').addEventListener('click', async ()=>{
+    const name = document.getElementById('vname').value;
+    const contact = document.getElementById('vcontact').value;
+    const text = document.getElementById('vtext').value;
+    if(!text.trim()) return alert('Enter message');
+    const form = new FormData();
+    form.append('name', name);
+    form.append('contact', contact);
+    form.append('text', text);
+    const res = await fetch(sendUrl, { method:'POST', body: form });
+    const data = await res.json();
+    if(data.ok){
+      document.getElementById('vtext').value = '';
+      const sb = document.getElementById('successBar');
+      sb.style.display = 'block';
+      setTimeout(()=> sb.style.display='none', 3500);
+    } else {
+      alert('Send failed: ' + (data.error || 'unknown'));
+    }
+  });
+
+})();
+</script>
+
+{% endblock %}

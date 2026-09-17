@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+    .exam-welcome-box{
+        width:90%;
+        max-width:720px;
+        background:white;
+        margin:40px auto;
+        padding:28px;
+        border-radius:10px;
+        box-shadow:0 6px 25px rgba(0,0,0,0.08);
+        text-align:center;
+        animation:fadeIn .5s ease;
+    }
+    @keyframes fadeIn{
+        from{opacity:0; transform:translateY(18px);}
+        to{opacity:1; transform:translateY(0);}
+    }
+    .subject-list{ list-style:none; padding:0; margin:18px 0 0 0; display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; }
+    .subject-item{
+        padding:12px 14px;
+        border-radius:8px;
+        background:#f5f8ff;
+        text-align:left;
+    }
+    .subject-name{ font-weight:700; color:#003bff; }
+    .subject-status{ font-size:13px; margin-top:4px; }
+    .ok { color:#1a9e4f; }
+    .missing { color:#d9534f; }
+
+    .start-btn-big{
+        margin-top:24px;
+        background:#0058ff; color:white; padding:14px 28px;
+        border-radius:8px; border:none; cursor:pointer; font-size:17px; font-weight:700;
+    }
+    .start-btn-big[disabled]{ background:#cfdcff; cursor:not-allowed; color:#6b7aa6; }
+    .start-btn-big:hover:not([disabled]) { background:#013ec8; }
+
+    .clock-note{
+        margin-top:14px; padding:10px 14px; background:#fff7e6; border:1px solid #ffe2a8;
+        border-radius:8px; font-size:14px; color:#7a5200;
+    }
+    .note { color:#666; margin-top:14px; font-size:13px; }
+</style>
+
+<div class="exam-welcome-box">
+    <h2 style="color:#0058ff;">Welcome, {{ candidate.full_name }}</h2>
+
+    {% if in_progress %}
+        <p>You already have a UTME sitting in progress. Click below to continue.</p>
+    {% else %}
+        <p>All 4 of your registered subjects will open together, exactly like the
+        real JAMB UTME. You can switch freely between subjects at any time —
+        one shared clock runs for the whole sitting.</p>
+    {% endif %}
+
+    <ul class="subject-list">
+        {% for s in subjects %}
+            <li class="subject-item">
+                <div class="subject-name">{{ s.subject }}</div>
+                <div class="subject-status ok">✓ {{ s.questions_to_display }} questions ready</div>
+            </li>
+        {% endfor %}
+        {% for m in missing_subjects %}
+            <li class="subject-item">
+                <div class="subject-name">{{ m }}</div>
+                <div class="subject-status missing">✗ No questions uploaded yet for {{ exam_year.year }}</div>
+            </li>
+        {% endfor %}
+    </ul>
+
+    <div class="clock-note">
+        ⏱ Total sitting time: <strong>{{ total_minutes }} minutes</strong> for ALL subjects
+        combined — the clock does not pause when you switch subjects.
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+        <p style="color:red; font-weight:600; margin-top:14px;">{{ message }}</p>
+        {% endfor %}
+    {% endif %}
+
+    <form method="post" action="{% url 'exam_portal:begin_utme' %}">
+        {% csrf_token %}
+        <button type="submit" class="start-btn-big" {% if not subjects %}disabled{% endif %}>
+            {% if in_progress %}Continue My UTME{% else %}Start JAMB Training{% endif %}
+        </button>
+    </form>
+
+    <p class="note">Once started, the timer cannot be paused or reset. Make sure you are ready.</p>
+</div>
+
+{% endblock %}

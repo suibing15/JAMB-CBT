@@ -1,0 +1,101 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SUIBING IT SERVICES - JAMB CBT</title>
+
+    <!-- ✅ FIXED STATIC -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+    <style>
+        .top-nav {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            padding: 8px 20px;
+            background: #f5f5f5;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .top-nav a {
+            text-decoration: none;
+            font-size: 13px;
+            padding: 6px 10px;
+            border-radius: 4px;
+            background: #007bff;
+            color: white;
+        }
+
+        .top-nav a:hover {
+            background: #0056b3;
+        }
+
+        .back-btn {
+            background: #dc3545;
+        }
+
+        .back-btn:hover {
+            background: #a71d2a;
+        }
+    </style>
+</head>
+
+<body>
+
+<header class="header">
+    <!-- ✅ FIXED STATIC -->
+    <img src="{% static 'img/logo.png' %}" class="logo" alt="Logo">
+
+    <div class="title">SUIBING IT SERVICES</div>
+    <div class="motto">"Fast Secure and Reliable"</div>
+    <div class="address">Kademawa, Garko L.G, Kano State, Nigeria</div>
+</header>
+
+{% if not request.session.exam_started %}
+<div class="top-nav">
+    <a href="{% url 'home' %}">🏠 Home</a>
+    <a href="javascript:history.back()" class="back-btn">⬅ Back</a>
+</div>
+{% endif %}
+
+<main class="main-content">
+    {% if messages %}
+    <div class="global-messages" style="max-width:900px;margin:14px auto 0 auto;">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }}"
+             style="padding:12px 16px;border-radius:8px;margin-bottom:10px;font-weight:600;
+                    {% if message.tags == 'error' %}background:#fdecea;color:#a5192a;border:1px solid #f5c6cb;
+                    {% elif message.tags == 'success' %}background:#e9f9ee;color:#1a7a3d;border:1px solid #c3e6cb;
+                    {% elif message.tags == 'warning' %}background:#fff8e1;color:#8a6100;border:1px solid #ffe4a3;
+                    {% else %}background:#eef4ff;color:#0b3a8c;border:1px solid #d4e2ff;{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% block content %}
+    {% endblock %}
+</main>
+
+<footer class="footer">
+    &copy; 2025 SUIBING IT SERVICES. All Rights Reserved.
+</footer>
+
+{% include 'exam_portal/chat_widget.html' %}
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+{% if request.session.exam_started %}
+<script>
+    history.pushState(null, null, location.href);
+    window.onpopstate = function () {
+        history.go(1);
+    };
+</script>
+{% endif %}
+
+</body>
+</html>

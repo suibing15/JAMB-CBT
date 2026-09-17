@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+
+<style>
+.find-record-container {
+    max-width: 850px;
+    margin: 60px auto;
+    background: white;
+    border: 2px solid #d9e4ff;
+    border-radius: 14px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.05);
+    padding: 40px 45px;
+    text-align: center;
+    transition: all .3s ease;
+}
+
+.find-record-container:hover {
+    box-shadow: 0 8px 25px rgba(0,0,0,0.07);
+}
+
+.input-field {
+    width: 100%;
+    padding: 12px;
+    border: 1.5px solid #cfd8ff;
+    border-radius: 8px;
+    font-size: 15px;
+    margin-bottom: 18px;
+    transition: .3s;
+}
+
+.input-field:focus {
+    border-color: #0058ff;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(0,88,255,0.15);
+}
+
+.btn-check {
+    background: #0058ff;
+    color: white;
+    padding: 12px 25px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background .25s ease;
+}
+.btn-check:hover { background: #0041c8; }
+
+.success-bar {
+    color: white;
+    padding: 13px 15px;
+    border-radius: 8px;
+    font-weight: 600;
+    margin-bottom: 25px;
+    background: #28a745;
+}
+
+.record-card {
+    background: #f9fbff;
+    border: 2px solid #d9e4ff;
+    border-radius: 10px;
+    padding: 18px 20px;
+    text-align: left;
+    margin: 15px 0;
+    transition: .25s;
+}
+
+.record-card:hover {
+    box-shadow: 0 4px 14px rgba(0,0,0,0.07);
+    transform: translateY(-2px);
+}
+
+.btn-download {
+    display: inline-block;
+    background: #00b44b;
+    color: white;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-weight: 600;
+    text-decoration: none;
+    margin-top: 15px;
+    transition: .3s;
+}
+.btn-download:hover {
+    background: #00963f;
+}
+
+.candidate-photo {
+    width: 120px;
+    height: 120px;
+    border-radius: 10px;
+    object-fit: cover;
+    margin: 15px auto;
+    display: block;
+    border: 3px solid #d9e4ff;
+}
+
+.menu-back {
+    display: inline-block;
+    margin-top: 25px;
+    color: #0058ff;
+    text-decoration: none;
+    font-weight: 600;
+    padding: 8px 12px;
+    border: 1.5px solid #cddaff;
+    border-radius: 8px;
+    transition: .3s;
+}
+.menu-back:hover {
+    background: #0058ff;
+    color: white;
+}
+</style>
+
+<div class="find-record-container">
+    <h2 style="color:#0058ff;">🗂️ FIND YOUR RECORD</h2>
+    <p style="color:#555; margin-bottom:25px;">
+        Provide your <strong>registered phone number</strong> to view and download your result record.
+    </p>
+
+    <form method="POST" style="margin-bottom:20px;">
+        {% csrf_token %}
+        <input type="text" name="phone" class="input-field" placeholder="Enter your phone number" required>
+        <button type="submit" class="btn-check">Search Record</button>
+    </form>
+
+    {% if message %}
+    <div class="success-bar" style="background:{% if success %}#28a745{% else %}#ff4d4d{% endif %};">
+        {{ message }}
+    </div>
+    {% endif %}
+
+    {% if candidate %}
+        {% if candidate.photo %}
+            <img src="{{ candidate.photo.url }}" alt="Candidate Photo" class="candidate-photo">
+        {% endif %}
+        <h3 style="color:#003bff;">{{ candidate.full_name }}</h3>
+        <p><strong>Phone:</strong> {{ candidate.phone }}</p>
+
+        {% if session %}
+            <div class="record-card">
+                <h4 style="color:#003bff;">UTME Sitting — {{ session.exam_year.year }}</h4>
+                <p><strong>Total Score:</strong> {{ session.score }} / 400</p>
+                <p><strong>Status:</strong>
+                    {% if session.completed %}
+                        <span style="color:green;">✅ Completed</span>
+                    {% else %}
+                        <span style="color:orange;">🕒 In Progress</span>
+                    {% endif %}
+                </p>
+                {% for subject, score in session.subject_scores.items %}
+                    <p style="margin:2px 0; font-size:14px;">{{ subject }}: <strong>{{ score }}</strong></p>
+                {% endfor %}
+            </div>
+            {% if session.completed %}
+            <a href="{% url 'exam_portal:download_record_pdf' candidate.id %}" class="btn-download">
+                ⬇️ Download PDF Result Slip
+            </a>
+            {% endif %}
+        {% else %}
+            <p style="color:#888; margin-top:10px;">No UTME sitting found yet for this candidate.</p>
+        {% endif %}
+    {% endif %}
+
+    <a href="/" class="menu-back">🏠 Back to Home</a>
+</div>
+
+{% endblock %}

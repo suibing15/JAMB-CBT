@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-container">
+  <h2 style="text-align:center; color:#0058ff; margin-bottom:20px;">
+      Subjects for Exam Year {{ year.year }}
+  </h2>
+
+  <a href="/admin/exams/examsubject/add/" class="btn-submit" style="width:auto; margin-bottom:15px;">
+    ➕ Add Subject (via Admin Panel)
+  </a>
+
+  <div class="form-box">
+    {% for s in subjects %}
+      <div style="margin-bottom:12px; padding:10px; border-bottom:1px solid #d8e3ff;">
+        <strong>{{ s.name }}</strong>
+        <a href="{% url 'management:question_list' s.id %}" style="color:#0058ff; margin-left:10px;">
+            • View Questions ({{ s.questions.count }})
+        </a>
+        <a href="{% url 'management:upload_questions' s.id %}" style="color:#00733E; margin-left:10px;">
+            • Upload XLSX
+        </a>
+      </div>
+    {% empty %}
+      <p>No subjects added for this exam year yet.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

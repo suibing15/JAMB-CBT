@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-container" style="max-width:700px; margin:auto;">
+
+  <h2 style="text-align:center; color:#0058ff; margin-bottom:15px;">
+      Upload Questions for {{ subject.name }}
+  </h2>
+
+  <p style="margin-bottom:10px; color:#444;">
+      Excel Format (first row is header):
+      <br><b>question | A | B | C | D | correct | mark_value</b>
+  </p>
+
+  <form method="post" enctype="multipart/form-data" class="form-box">{% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn-submit">Upload File</button>
+  </form>
+
+</div>
+{% endblock %}
